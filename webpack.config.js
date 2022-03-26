@@ -26,6 +26,10 @@ module.exports = {
   // file resolutions
   resolve: {
     extensions: [ '.ts', '.js' ],
+    fallback: { 
+      "path": false,
+      "fs": false
+    }
   },
 
   module: {
@@ -41,4 +45,9 @@ module.exports = {
       },
     ],
   },
+  
+  devServer: {
+    static: './dist',
+  },
+
 };

@@ -1,4 +1,5 @@
 import * as THREE from 'three';
+import ammo from 'ammo.js';
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls'
 import { Colors } from './colors';
 import { Materials } from './materials';
@@ -9,12 +10,33 @@ let scene: THREE.Scene;
 let renderer: THREE.WebGLRenderer;
 let controls;
 let cube: THREE.Mesh<THREE.BoxGeometry, THREE.MeshPhysicalMaterial>;
+const clock = new THREE.Clock();
+
+let Ammo;
+// Physics variables
+const gravityConstant = - 9.8;
+let collisionConfiguration;
+let dispatcher;
+let broadphase;
+let solver;
+let softBodySolver;
+let physicsWorld;
+let rigidBodies: THREE.Mesh<THREE.BoxGeometry, THREE.MeshPhysicalMaterial>[] = [];
+const margin = 0.05;
+let hinge;
+let rope;
+let transformAux1;
 
 init();
 animate();
 
-function init() {
+async function init() {
+    Ammo = await ammo();
+
     initGraphics();
+
+    initPhysics();
+
     createObjects();
 }
 
@@ -52,28 +74,129 @@ function initGraphics() {
     scene.add(light);
 }
 
-function createObjects() {
-    // Floor Plane
-    const plane = new THREE.Mesh( new THREE.PlaneGeometry(5, 5, 1, 1), Materials.Standard());
-    plane.receiveShadow = true;
-    plane.castShadow = true;
-    plane.rotateX(dtr(-90));
-    scene.add(plane);
+function initPhysics() {
+    collisionConfiguration = new Ammo.btSoftBodyRigidBodyCollisionConfiguration();
+    dispatcher = new Ammo.btCollisionDispatcher( collisionConfiguration );
+    broadphase = new Ammo.btDbvtBroadphase();
+    solver = new Ammo.btSequentialImpulseConstraintSolver();
+    softBodySolver = new Ammo.btDefaultSoftBodySolver();
+    physicsWorld = new Ammo.btSoftRigidDynamicsWorld( dispatcher, broadphase, solver, collisionConfiguration, softBodySolver );
+    physicsWorld.setGravity( new Ammo.btVector3( 0, gravityConstant, 0 ) );
+    physicsWorld.getWorldInfo().set_m_gravity( new Ammo.btVector3( 0, gravityConstant, 0 ) );
 
-    cube = new THREE.Mesh( new THREE.BoxGeometry(), Materials.Standard() );
-    cube.material.color = Colors.Blue
-    cube.position.set(0, 1, 0);
+    transformAux1 = new Ammo.btTransform();
+}
+
+function createObjects() {
+
+    
+    let pos = new THREE.Vector3();
+    let quat = new THREE.Quaternion();
+
+    // Ground
+    pos.set(0,-1,0);
+    quat.set(0,0,0,1);
+    const ground = createParalellepiped( 40, 1, 40, 0, pos, quat, Materials.Standard() );
+    ground.castShadow = true;
+    ground.receiveShadow = true;
+
+    // Cube
+    pos.set( 0, 1, 1 );
+    quat.set( 10, 5, 0, 1 );
+    cube = createParalellepiped(0.5, 0.5, 0.5, 10, pos, quat, Materials.Standard())
     cube.castShadow = true;
     cube.receiveShadow = true;
+    
     scene.add(cube);
+}
+
+function createParalellepiped( sx, sy, sz, mass, pos, quat, material ) {
+
+    const threeObject = new THREE.Mesh( new THREE.BoxGeometry( sx, sy, sz, 1, 1, 1 ), material );
+    const shape = new Ammo.btBoxShape( new Ammo.btVector3( sx * 0.5, sy * 0.5, sz * 0.5 ) );
+    shape.setMargin( margin );
+
+    createRigidBody( threeObject, shape, mass, pos, quat );
+
+    return threeObject;
+
+}
+
+function createRigidBody( threeObject, physicsShape, mass, pos, quat ) {
+
+    threeObject.position.copy( pos );
+    threeObject.quaternion.copy( quat );
+
+    const transform = new Ammo.btTransform();
+    transform.setIdentity();
+    transform.setOrigin( new Ammo.btVector3( pos.x, pos.y, pos.z ) );
+    transform.setRotation( new Ammo.btQuaternion( quat.x, quat.y, quat.z, quat.w ) );
+    const motionState = new Ammo.btDefaultMotionState( transform );
+
+    const localInertia = new Ammo.btVector3( 0, 0, 0 );
+    physicsShape.calculateLocalInertia( mass, localInertia );
+
+    const rbInfo = new Ammo.btRigidBodyConstructionInfo( mass, motionState, physicsShape, localInertia );
+    const body = new Ammo.btRigidBody( rbInfo );
+
+    threeObject.userData.physicsBody = body;
+
+    scene.add( threeObject );
+
+    if ( mass > 0 ) {
+
+        rigidBodies.push( threeObject );
+
+        // Disable deactivation
+        body.setActivationState( 4 );
+
+    }
+
+    physicsWorld.addRigidBody( body );
+
 }
 
 // Animate Scene
 function animate() {
     requestAnimationFrame( animate );
-    cube.rotation.x += 0.01;
-    cube.rotation.y += 0.01;
+    render();
+
+
+    // cube.rotation.x += 0.01;
+    // cube.rotation.y += 0.01;
+    // renderer.render( scene, camera );
+}
+
+function render() {
+    const deltaTime = clock.getDelta();
+
+    updatePhysics( deltaTime );
+
     renderer.render( scene, camera );
+}
+
+function updatePhysics( deltaTime ) {
+
+    // Step world
+    physicsWorld.stepSimulation( deltaTime, 10 );
+
+    // Update rigid bodies
+    for ( let i = 0, il = rigidBodies.length; i < il; i ++ ) {
+
+        const objThree = rigidBodies[ i ];
+        const objPhys = objThree.userData.physicsBody;
+        const ms = objPhys.getMotionState();
+        if ( ms ) {
+
+            ms.getWorldTransform( transformAux1 );
+            const p = transformAux1.getOrigin();
+            const q = transformAux1.getRotation();
+            objThree.position.set( p.x(), p.y(), p.z() );
+            objThree.quaternion.set( q.x(), q.y(), q.z(), q.w() );
+        }
+
+    }
+
 }
 
 // Degree's to radians
