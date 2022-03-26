@@ -3,7 +3,7 @@ const HtmlWebpackPlugin = require('html-webpack-plugin');
 
 module.exports = {
 
-  mode: 'production',
+  mode: 'development',
 
   performance: {
     maxAssetSize: 1048576,
