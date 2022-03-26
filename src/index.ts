@@ -23,20 +23,21 @@ let softBodySolver;
 let physicsWorld;
 let rigidBodies: THREE.Mesh<THREE.BoxGeometry, THREE.MeshPhysicalMaterial>[] = [];
 const margin = 0.05;
-let hinge;
-let rope;
 let transformAux1;
 
-init();
-animate();
+start()
+
+async function start() {
+    ammo().then( AmmoLib => {
+        Ammo = AmmoLib
+        init();
+        animate();
+    });
+}
 
 async function init() {
-    Ammo = await ammo();
-
     initGraphics();
-
     initPhysics();
-
     createObjects();
 }
 
@@ -67,10 +68,19 @@ function initGraphics() {
     // Ambient Light
     scene.add( new THREE.AmbientLight(Colors.DarkGrey));
 
-    // Light
-    const light = new THREE.PointLight( Colors.White, 1, 100);
-    light.position.set(1, 4, -1);
+    // Sun
+    const light = new THREE.DirectionalLight(Colors.White, 1);
+    light.position.set( -10, 20, 10 );
     light.castShadow = true;
+    light.shadow.mapSize.width = 2048; 
+    light.shadow.mapSize.height = 2048;
+    light.shadow.camera.near = 0.5;
+    light.shadow.camera.far = 1000;
+    light.shadow.camera.left = -10;
+    light.shadow.camera.right = 10;
+    light.shadow.camera.top = 10;
+    light.shadow.camera.bottom = -10;
+    light.shadow.camera.near = 1;
     scene.add(light);
 }
 
@@ -89,25 +99,30 @@ function initPhysics() {
 
 function createObjects() {
 
-    
     let pos = new THREE.Vector3();
     let quat = new THREE.Quaternion();
 
     // Ground
     pos.set(0,-1,0);
     quat.set(0,0,0,1);
-    const ground = createParalellepiped( 40, 1, 40, 0, pos, quat, Materials.Standard() );
+    let material = Materials.Standard();
+    material.color = Colors.LightGrey;
+    const ground = createParalellepiped(40, 1, 40, 0, pos, quat, material);
     ground.castShadow = true;
     ground.receiveShadow = true;
 
-    // Cube
-    pos.set( 0, 1, 1 );
-    quat.set( 10, 5, 0, 1 );
-    cube = createParalellepiped(0.5, 0.5, 0.5, 10, pos, quat, Materials.Standard())
-    cube.castShadow = true;
-    cube.receiveShadow = true;
-    
-    scene.add(cube);
+    // CUBES!!!
+    for(let i = 0; i < 20; i++){
+        pos.set( 0, i, 0 );
+        quat.set( 10, 5, 0, 1 );
+        material = Materials.Standard();
+        material.color = Colors.Red;
+        cube = createParalellepiped(0.5, 0.5, 0.5, 10, pos, quat, material)
+        cube.castShadow = true;
+        cube.receiveShadow = true;
+        
+        scene.add(cube);
+    }
 }
 
 function createParalellepiped( sx, sy, sz, mass, pos, quat, material ) {
@@ -160,11 +175,6 @@ function createRigidBody( threeObject, physicsShape, mass, pos, quat ) {
 function animate() {
     requestAnimationFrame( animate );
     render();
-
-
-    // cube.rotation.x += 0.01;
-    // cube.rotation.y += 0.01;
-    // renderer.render( scene, camera );
 }
 
 function render() {
@@ -182,7 +192,6 @@ function updatePhysics( deltaTime ) {
 
     // Update rigid bodies
     for ( let i = 0, il = rigidBodies.length; i < il; i ++ ) {
-
         const objThree = rigidBodies[ i ];
         const objPhys = objThree.userData.physicsBody;
         const ms = objPhys.getMotionState();
@@ -194,9 +203,7 @@ function updatePhysics( deltaTime ) {
             objThree.position.set( p.x(), p.y(), p.z() );
             objThree.quaternion.set( q.x(), q.y(), q.z(), q.w() );
         }
-
     }
-
 }
 
 // Degree's to radians

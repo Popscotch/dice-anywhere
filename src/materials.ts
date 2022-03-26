@@ -7,10 +7,8 @@ export class Materials {
         return new THREE.MeshPhysicalMaterial({
             color: Colors.AlmostWhite,
             metalness: 0,
-            roughness: 0.2,
-            clearcoat: 1.0,
-            clearcoatRoughness: 1.0,
-            reflectivity: 1.0,
+            roughness: 0.3,
+            reflectivity: 0.5,
             envMap: null,
         });
     }
