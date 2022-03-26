@@ -2,7 +2,16 @@ const path = require('path');
 const HtmlWebpackPlugin = require('html-webpack-plugin');
 
 module.exports = {
-  entry: './src/index.js',
+
+  mode: 'production',
+
+  performance: {
+    maxAssetSize: 1048576,
+    maxEntrypointSize: 1048576,
+  },
+
+  entry: './src/index.ts',
+
   plugins: [
     new HtmlWebpackPlugin({
       title: 'Dice Anywhere',
@@ -13,11 +22,22 @@ module.exports = {
     path: path.resolve(__dirname, 'dist'),
     clean: true,
   },
+
+  // file resolutions
+  resolve: {
+    extensions: [ '.ts', '.js' ],
+  },
+
   module: {
     rules: [
       {
         test: /\.css$/i,
         use: ['style-loader', 'css-loader'],
+      },
+      {
+        test: /\.tsx?/,
+        use: 'ts-loader',
+        exclude: /node_modules/,
       },
     ],
   },
