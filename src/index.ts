@@ -2,8 +2,11 @@ import {
     AmbientLight,
     AxesHelper, 
     BoxGeometry, 
+    Color, 
     Mesh,
     MeshPhysicalMaterial, 
+    PCFShadowMap, 
+    PCFSoftShadowMap, 
     PerspectiveCamera, 
     PlaneGeometry, 
     PointLight, 
@@ -21,9 +24,12 @@ import './style.css';
 
 const renderer = new WebGLRenderer();
 renderer.setSize( window.innerWidth, window.innerHeight );
+renderer.shadowMap.enabled = true;
+renderer.shadowMap.type = PCFSoftShadowMap;
 document.body.appendChild( renderer.domElement );
 
 const scene = new Scene();
+scene.background = new Color(0xb5c9e8);
 
 const camera = new PerspectiveCamera( 75, window.innerWidth / window.innerHeight, 0.1, 1000 );
 camera.position.set(5, 5, 5);
@@ -53,12 +59,15 @@ const material = new MeshPhysicalMaterial( {
 } );
 const cube = new Mesh( geometry, material );
 cube.position.set(0, 1, 0);
+cube.castShadow = true;
+cube.receiveShadow = true;
 scene.add( cube );
 
-const light = new PointLight( 0xffffff, 1, 100 );
-light.position.set(0, 2, 0);
+const light = new PointLight( 0xffffff, 1, 100);
+light.position.set(1, 4, -1);
+light.castShadow = true;
 scene.add(light)
-scene.add( new AmbientLight(0x222222));
+scene.add( new AmbientLight(0x242930));
 
 function animate() {
     requestAnimationFrame( animate );
@@ -80,6 +89,8 @@ function makeFloor() {
         envMap: null
     } );
     const plane = new Mesh( geometry, material );
+    plane.receiveShadow = true;
+    plane.castShadow = true;
     plane.rotateX(dtr(-90));
     return plane;
 }
