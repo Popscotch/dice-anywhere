@@ -1,9 +1,12 @@
 import { 
+    AmbientLight,
     AxesHelper, 
     BoxGeometry, 
-    Mesh, MeshBasicMaterial, 
+    Mesh,
+    MeshPhysicalMaterial, 
     PerspectiveCamera, 
     PlaneGeometry, 
+    PointLight, 
     Scene, 
     WebGLRenderer 
 } from 'three';
@@ -39,9 +42,23 @@ scene.add(axesHelper);
 scene.add(makeFloor());
 
 const geometry = new BoxGeometry();
-const material = new MeshBasicMaterial( { color: 0x00ff00 } );
+const material = new MeshPhysicalMaterial( {
+    color: 0xf00000,
+    metalness: 0,
+    roughness: 0.5,
+    clearcoat: 1.0,
+    clearcoatRoughness: 1.0,
+    reflectivity: 1.0,
+    envMap: null
+} );
 const cube = new Mesh( geometry, material );
+cube.position.set(0, 1, 0);
 scene.add( cube );
+
+const light = new PointLight( 0xffffff, 1, 100 );
+light.position.set(0, 2, 0);
+scene.add(light)
+scene.add( new AmbientLight(0x222222));
 
 function animate() {
     requestAnimationFrame( animate );
@@ -53,7 +70,15 @@ animate();
 
 function makeFloor() {
     const geometry = new PlaneGeometry(5, 5, 1, 1);
-    const material = new MeshBasicMaterial( { color: 0xffffff })
+    const material = new MeshPhysicalMaterial( {
+        color: 0xffffff,
+        metalness: 0,
+        roughness: 0.5,
+        clearcoat: 1.0,
+        clearcoatRoughness: 1.0,
+        reflectivity: 1.0,
+        envMap: null
+    } );
     const plane = new Mesh( geometry, material );
     plane.rotateX(dtr(-90));
     return plane;
