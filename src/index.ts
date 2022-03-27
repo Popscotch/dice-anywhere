@@ -76,10 +76,10 @@ function initGraphics() {
     light.shadow.mapSize.height = 2048;
     light.shadow.camera.near = 0.5;
     light.shadow.camera.far = 1000;
-    light.shadow.camera.left = -10;
-    light.shadow.camera.right = 10;
-    light.shadow.camera.top = 10;
-    light.shadow.camera.bottom = -10;
+    light.shadow.camera.left = -20;
+    light.shadow.camera.right = 20;
+    light.shadow.camera.top = 20;
+    light.shadow.camera.bottom = -20;
     light.shadow.camera.near = 1;
     scene.add(light);
 }
@@ -112,8 +112,8 @@ function createObjects() {
     ground.receiveShadow = true;
 
     // CUBES!!!
-    for(let i = 0; i < 20; i++){
-        pos.set( 0, i, 0 );
+    for(let i = 0; i < 33; i++){
+        pos.set( 0.1 * i, i, 0.1 * i );
         quat.set( 10, 5, 0, 1 );
         material = Materials.Standard();
         material.color = Colors.Red;
