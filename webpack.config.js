@@ -10,7 +10,7 @@ module.exports = {
     maxEntrypointSize: 1048576,
   },
 
-  entry: './src/index.ts',
+  entry: './src/app.ts',
 
   plugins: [
     new HtmlWebpackPlugin({
@@ -48,6 +48,7 @@ module.exports = {
   
   devServer: {
     static: './dist',
+    allowedHosts: 'auto'
   },
 
 };

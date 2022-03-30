@@ -39,6 +39,7 @@ async function init() {
     initGraphics();
     initPhysics();
     createObjects();
+    initInput();
 }
 
 function initGraphics() {
@@ -168,7 +169,7 @@ function createRigidBody( threeObject, physicsShape, mass, pos, quat ) {
     }
 
     physicsWorld.addRigidBody( body );
-
+    return body;
 }
 
 // Animate Scene
@@ -204,6 +205,38 @@ function updatePhysics( deltaTime ) {
             objThree.quaternion.set( q.x(), q.y(), q.z(), q.w() );
         }
     }
+}
+
+function initInput(  ) {
+    window.addEventListener('pointerdown', (event) => {
+        const mouseCoords = new THREE.Vector2();
+        mouseCoords.set(
+            ( event.clientX / window.innerWidth ) * 2 - 1,
+            - ( event.clientY / window.innerHeight ) * 2 + 1
+        );
+
+        const raycaster = new THREE.Raycaster();
+        raycaster.setFromCamera( mouseCoords, camera );
+
+        const cube = new THREE.Mesh(new THREE.BoxGeometry(0.4, 0.4, 0.4, 1, 1, 1), Materials.Standard());
+        cube.castShadow = true;
+        cube.receiveShadow = true;
+        const cubeShape = new Ammo.btBoxShape( new Ammo.btVector3( 0.2, 0.2, 0.2 ) );
+        cubeShape.setMargin( margin );
+
+        const pos = new THREE.Vector3();
+        pos.copy( raycaster.ray.direction );
+        pos.add( raycaster.ray.origin );
+
+        const quat = new THREE.Quaternion();
+        quat.set( 0, 0, 0, 1 );
+
+        const cubeBody = createRigidBody( cube, cubeShape, 35, pos, quat );
+
+        pos.copy( raycaster.ray.direction );
+        pos.multiplyScalar( 24 );
+        cubeBody.setLinearVelocity( new Ammo.btVector3( pos.x, pos.y, pos.z ) );
+    });
 }
 
 // Degree's to radians
