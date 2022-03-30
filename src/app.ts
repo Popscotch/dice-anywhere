@@ -153,6 +153,7 @@ function createRigidBody( threeObject, physicsShape, mass, pos, quat ) {
     physicsShape.calculateLocalInertia( mass, localInertia );
 
     const rbInfo = new Ammo.btRigidBodyConstructionInfo( mass, motionState, physicsShape, localInertia );
+    rbInfo.m_friction = 100;
     const body = new Ammo.btRigidBody( rbInfo );
 
     threeObject.userData.physicsBody = body;
@@ -237,9 +238,4 @@ function initInput(  ) {
         pos.multiplyScalar( 24 );
         cubeBody.setLinearVelocity( new Ammo.btVector3( pos.x, pos.y, pos.z ) );
     });
-}
-
-// Degree's to radians
-function dtr(degrees: number) {
-    return degrees * (Math.PI / 180);
 }
