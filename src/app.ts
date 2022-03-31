@@ -106,7 +106,7 @@ function createObjects() {
     // Ground
     pos.set(0,-1,0);
     quat.set(0,0,0,1);
-    let material = Materials.Standard();
+    let material = Materials.Standard;
     material.color = Colors.LightGrey;
     const ground = createParalellepiped(40, 1, 40, 0, pos, quat, material);
     ground.castShadow = true;
@@ -116,7 +116,7 @@ function createObjects() {
     for(let i = 0; i < 33; i++){
         pos.set( 0.1 * i, i, 0.1 * i );
         quat.set( 10, 5, 0, 1 );
-        material = Materials.Standard();
+        material = Materials.Standard;
         material.color = Colors.Red;
         cube = createParalellepiped(0.5, 0.5, 0.5, 10, pos, quat, material)
         cube.castShadow = true;
@@ -219,7 +219,7 @@ function initInput(  ) {
         const raycaster = new THREE.Raycaster();
         raycaster.setFromCamera( mouseCoords, camera );
 
-        const cube = new THREE.Mesh(new THREE.BoxGeometry(0.4, 0.4, 0.4, 1, 1, 1), Materials.Standard());
+        const cube = new THREE.Mesh(new THREE.BoxGeometry(0.4, 0.4, 0.4, 1, 1, 1), Materials.Standard);
         cube.castShadow = true;
         cube.receiveShadow = true;
         const cubeShape = new Ammo.btBoxShape( new Ammo.btVector3( 0.2, 0.2, 0.2 ) );
