@@ -5,37 +5,28 @@ import { Colors } from './colors';
 import { Materials } from './materials';
 import './style.css';
 
-let camera: THREE.Camera | THREE.PerspectiveCamera;
-let scene: THREE.Scene;
-let renderer: THREE.WebGLRenderer;
-let controls;
-let cube: THREE.Mesh<THREE.BoxGeometry, THREE.MeshPhysicalMaterial>;
-const clock = new THREE.Clock();
-
 let Ammo;
-// Physics variables
-const gravityConstant = - 9.8;
-let collisionConfiguration;
-let dispatcher;
-let broadphase;
-let solver;
-let softBodySolver;
+let clock = new THREE.Clock();
+
+let renderer: THREE.WebGLRenderer;
+let scene: THREE.Scene;
+let camera: THREE.PerspectiveCamera;
+let orbitController: OrbitControls;
+
 let physicsWorld;
+let worldTransform;
 let rigidBodies: THREE.Mesh<THREE.BoxGeometry, THREE.MeshPhysicalMaterial>[] = [];
+
 const margin = 0.05;
-let transformAux1;
+const gravityConstant = - 9.8;
 
-start()
+ammo().then( AmmoLib => {
+    Ammo = AmmoLib
+    init();
+    animate();
+});
 
-async function start() {
-    ammo().then( AmmoLib => {
-        Ammo = AmmoLib
-        init();
-        animate();
-    });
-}
-
-async function init() {
+function init() {
     initGraphics();
     initPhysics();
     createObjects();
@@ -43,15 +34,6 @@ async function init() {
 }
 
 function initGraphics() {
-    // Camera
-    camera = new THREE.PerspectiveCamera( 75, window.innerWidth / window.innerHeight, 0.1, 1000 );
-    camera.position.set(5, 5, 5);
-    camera.lookAt(0,0,0);
-
-    // Scene
-    scene = new THREE.Scene();
-    scene.background = new THREE.Color(0xb5c9e8);
-
     // Renderer
     renderer = new THREE.WebGLRenderer();
     renderer.setSize( window.innerWidth, window.innerHeight );
@@ -59,12 +41,17 @@ function initGraphics() {
     renderer.shadowMap.type = THREE.PCFSoftShadowMap;
     document.body.appendChild( renderer.domElement );
 
+    // Scene
+    scene = new THREE.Scene();
+    scene.background = new THREE.Color(0xb5c9e8);
+
+    // Camera
+    camera = new THREE.PerspectiveCamera( 75, window.innerWidth / window.innerHeight, 0.1, 1000 );
+    camera.position.set(5, 5, 5);
+
     // Orbit Control
-    controls = new OrbitControls( camera, renderer.domElement );
-    controls.target.set( 0, 0.5, 0 );
-    controls.update();
-    controls.enablePan = false;
-    controls.enableDamping = true;
+    orbitController = new OrbitControls( camera, renderer.domElement );
+    orbitController.target.set( 0, 0, 0 );
 
     // Ambient Light
     scene.add( new THREE.AmbientLight(Colors.DarkGrey));
@@ -86,48 +73,57 @@ function initGraphics() {
 }
 
 function initPhysics() {
-    collisionConfiguration = new Ammo.btSoftBodyRigidBodyCollisionConfiguration();
-    dispatcher = new Ammo.btCollisionDispatcher( collisionConfiguration );
-    broadphase = new Ammo.btDbvtBroadphase();
-    solver = new Ammo.btSequentialImpulseConstraintSolver();
-    softBodySolver = new Ammo.btDefaultSoftBodySolver();
-    physicsWorld = new Ammo.btSoftRigidDynamicsWorld( dispatcher, broadphase, solver, collisionConfiguration, softBodySolver );
+    const collisionConfiguration = new Ammo.btSoftBodyRigidBodyCollisionConfiguration();
+    const dispatcher = new Ammo.btCollisionDispatcher( collisionConfiguration );
+    const broadphase = new Ammo.btDbvtBroadphase();
+    const solver = new Ammo.btSequentialImpulseConstraintSolver();
+    const softBodySolver = new Ammo.btDefaultSoftBodySolver();
+
+    physicsWorld = new Ammo.btSoftRigidDynamicsWorld(
+        dispatcher, 
+        broadphase, 
+        solver, 
+        collisionConfiguration, 
+        softBodySolver
+    );
+
     physicsWorld.setGravity( new Ammo.btVector3( 0, gravityConstant, 0 ) );
     physicsWorld.getWorldInfo().set_m_gravity( new Ammo.btVector3( 0, gravityConstant, 0 ) );
 
-    transformAux1 = new Ammo.btTransform();
+    worldTransform = new Ammo.btTransform();
 }
 
 function createObjects() {
-
-    let pos = new THREE.Vector3();
-    let quat = new THREE.Quaternion();
-
     // Ground
-    pos.set(0,-1,0);
-    quat.set(0,0,0,1);
+    let pos = new THREE.Vector3(0, -1, 0);
+    let quat = new THREE.Quaternion(0, 0, 0, 1);
     let material = Materials.Standard;
     material.color = Colors.LightGrey;
     const ground = createParalellepiped(40, 1, 40, 0, pos, quat, material);
     ground.castShadow = true;
     ground.receiveShadow = true;
 
-    // CUBES!!!
+    // Create Cubes
     for(let i = 0; i < 33; i++){
-        pos.set( 0.1 * i, i, 0.1 * i );
-        quat.set( 10, 5, 0, 1 );
+        pos = new THREE.Vector3(0.1 * i, i, 0.1 * i);
+        quat = new THREE.Quaternion(10, 5, 0, 1);
         material = Materials.Standard;
         material.color = Colors.Red;
-        cube = createParalellepiped(0.5, 0.5, 0.5, 10, pos, quat, material)
+        const cube = createParalellepiped(0.5, 0.5, 0.5, 10, pos, quat, material)
         cube.castShadow = true;
         cube.receiveShadow = true;
-        
-        scene.add(cube);
     }
 }
 
-function createParalellepiped( sx, sy, sz, mass, pos, quat, material ) {
-
+function createParalellepiped(
+    sx: number, 
+    sy: number, 
+    sz: number, 
+    mass: number, 
+    pos: THREE.Vector3, 
+    quat: THREE.Quaternion, 
+    material: THREE.MeshPhysicalMaterial 
+) {
     const threeObject = new THREE.Mesh( new THREE.BoxGeometry( sx, sy, sz, 1, 1, 1 ), material );
     const shape = new Ammo.btBoxShape( new Ammo.btVector3( sx * 0.5, sy * 0.5, sz * 0.5 ) );
     shape.setMargin( margin );
@@ -135,20 +131,23 @@ function createParalellepiped( sx, sy, sz, mass, pos, quat, material ) {
     createRigidBody( threeObject, shape, mass, pos, quat );
 
     return threeObject;
-
 }
 
-function createRigidBody( threeObject, physicsShape, mass, pos, quat ) {
-
+function createRigidBody( 
+    threeObject: THREE.Mesh<THREE.BoxGeometry, THREE.MeshPhysicalMaterial>, 
+    physicsShape, 
+    mass: number, 
+    pos: THREE.Vector3, 
+    quat: THREE.Quaternion
+) {
     threeObject.position.copy( pos );
     threeObject.quaternion.copy( quat );
 
     const transform = new Ammo.btTransform();
-    transform.setIdentity();
     transform.setOrigin( new Ammo.btVector3( pos.x, pos.y, pos.z ) );
     transform.setRotation( new Ammo.btQuaternion( quat.x, quat.y, quat.z, quat.w ) );
+    
     const motionState = new Ammo.btDefaultMotionState( transform );
-
     const localInertia = new Ammo.btVector3( 0, 0, 0 );
     physicsShape.calculateLocalInertia( mass, localInertia );
 
@@ -161,19 +160,14 @@ function createRigidBody( threeObject, physicsShape, mass, pos, quat ) {
     scene.add( threeObject );
 
     if ( mass > 0 ) {
-
         rigidBodies.push( threeObject );
-
-        // Disable deactivation
         body.setActivationState( 4 );
-
     }
 
     physicsWorld.addRigidBody( body );
     return body;
 }
 
-// Animate Scene
 function animate() {
     requestAnimationFrame( animate );
     render();
@@ -181,15 +175,11 @@ function animate() {
 
 function render() {
     const deltaTime = clock.getDelta();
-
     updatePhysics( deltaTime );
-
     renderer.render( scene, camera );
 }
 
 function updatePhysics( deltaTime ) {
-
-    // Step world
     physicsWorld.stepSimulation( deltaTime, 10 );
 
     // Update rigid bodies
@@ -199,9 +189,9 @@ function updatePhysics( deltaTime ) {
         const ms = objPhys.getMotionState();
         if ( ms ) {
 
-            ms.getWorldTransform( transformAux1 );
-            const p = transformAux1.getOrigin();
-            const q = transformAux1.getRotation();
+            ms.getWorldTransform( worldTransform );
+            const p = worldTransform.getOrigin();
+            const q = worldTransform.getRotation();
             objThree.position.set( p.x(), p.y(), p.z() );
             objThree.quaternion.set( q.x(), q.y(), q.z(), q.w() );
         }
