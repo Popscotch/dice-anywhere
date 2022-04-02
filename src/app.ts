@@ -41,6 +41,13 @@ function initGraphics() {
     renderer.shadowMap.type = THREE.PCFSoftShadowMap;
     document.body.appendChild( renderer.domElement );
 
+    window.onresize = function () {
+        camera.aspect = window.innerWidth / window.innerHeight;
+        camera.updateProjectionMatrix();
+
+        renderer.setSize( window.innerWidth, window.innerHeight );
+    };
+
     // Scene
     scene = new THREE.Scene();
     scene.background = new THREE.Color(0xb5c9e8);
