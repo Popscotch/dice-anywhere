@@ -44,7 +44,6 @@ function initGraphics() {
     window.onresize = function () {
         camera.aspect = window.innerWidth / window.innerHeight;
         camera.updateProjectionMatrix();
-
         renderer.setSize( window.innerWidth, window.innerHeight );
     };
 
@@ -216,7 +215,7 @@ function initInput(  ) {
         const raycaster = new THREE.Raycaster();
         raycaster.setFromCamera( mouseCoords, camera );
 
-        const cube = new THREE.Mesh(new THREE.BoxGeometry(0.4, 0.4, 0.4, 1, 1, 1), Materials.Standard);
+        let cube = new THREE.Mesh(new THREE.BoxGeometry(0.4, 0.4, 0.4, 1, 1, 1), Materials.Standard);
         cube.castShadow = true;
         cube.receiveShadow = true;
         const cubeShape = new Ammo.btBoxShape( new Ammo.btVector3( 0.2, 0.2, 0.2 ) );
@@ -226,13 +225,13 @@ function initInput(  ) {
         pos.copy( raycaster.ray.direction );
         pos.add( raycaster.ray.origin );
 
-        const quat = new THREE.Quaternion();
-        quat.set( 0, 0, 0, 1 );
+        let quat = new THREE.Quaternion(0, 0, 0, 1).random();
 
         const cubeBody = createRigidBody( cube, cubeShape, 35, pos, quat );
 
         pos.copy( raycaster.ray.direction );
         pos.multiplyScalar( 24 );
         cubeBody.setLinearVelocity( new Ammo.btVector3( pos.x, pos.y, pos.z ) );
+        cubeBody.setAngularVelocity (new Ammo.btVector3( 2, 2 , 2));
     });
 }
