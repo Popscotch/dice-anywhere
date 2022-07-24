@@ -4,6 +4,7 @@ import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls'
 import { Colors } from './colors';
 import { Materials } from './materials';
 import './style.css';
+import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js';
 
 let Ammo;
 let clock = new THREE.Clock();
@@ -15,7 +16,7 @@ let orbitController: OrbitControls;
 
 let physicsWorld;
 let worldTransform;
-let rigidBodies: THREE.Mesh<THREE.BoxGeometry, THREE.MeshPhysicalMaterial>[] = [];
+let rigidBodies: THREE.Mesh<THREE.BufferGeometry, THREE.MeshPhysicalMaterial>[] = [];
 
 const margin = 0.05;
 const gravityConstant = - 9.8;
@@ -109,7 +110,9 @@ function createObjects() {
     ground.castShadow = true;
     ground.receiveShadow = true;
 
-    const texture = new THREE.TextureLoader().load(require('./tex_test.png'));
+    const texture = new THREE.TextureLoader().load(require('./texture_dice.png'));
+    texture.mapping = THREE.UVMapping;
+    texture.flipY = false;
 
     // Create Cubes
     for (let i = 0; i < 33; i++) {
@@ -117,7 +120,7 @@ function createObjects() {
         quat = new THREE.Quaternion(10, 5, 0, 1);
         material = Materials.Standard;
         material.map = texture;
-        const cube = createParalellepiped(0.5, 0.5, 0.5, 10, pos, quat, material)
+        const cube = createCubes(0.5, 0.5, 0.5, 10, pos, quat, material)
         cube.castShadow = true;
         cube.receiveShadow = true;
     }
@@ -133,6 +136,36 @@ function createParalellepiped(
     material: THREE.MeshPhysicalMaterial 
 ) {
     const threeObject = new THREE.Mesh( new THREE.BoxGeometry( sx, sy, sz, 1, 1, 1 ), material );
+    
+    const shape = new Ammo.btBoxShape( new Ammo.btVector3( sx * 0.5, sy * 0.5, sz * 0.5 ) );
+    shape.setMargin( margin );
+
+    createRigidBody( threeObject, shape, mass, pos, quat );
+
+    return threeObject;
+}
+
+function createCubes (
+    sx: number, 
+    sy: number, 
+    sz: number, 
+    mass: number, 
+    pos: THREE.Vector3, 
+    quat: THREE.Quaternion, 
+    material: THREE.MeshPhysicalMaterial 
+) {
+    let threeObject: THREE.Mesh<THREE.BufferGeometry, THREE.MeshPhysicalMaterial> = new THREE.Mesh();
+
+    new GLTFLoader().load(require('./dice.gltf'), function (gltf) {
+        let object = <THREE.Mesh> gltf.scene.getObjectByProperty('type', 'Mesh');
+        let mesh = object.geometry;
+        threeObject.geometry = mesh.scale(sx * 0.5, sy * 0.5, sz * 0.5);
+    }, undefined, function (error) {
+        console.error(error);
+    });
+
+    threeObject.material = material;
+
     const shape = new Ammo.btBoxShape( new Ammo.btVector3( sx * 0.5, sy * 0.5, sz * 0.5 ) );
     shape.setMargin( margin );
 
@@ -142,7 +175,7 @@ function createParalellepiped(
 }
 
 function createRigidBody( 
-    threeObject: THREE.Mesh<THREE.BoxGeometry, THREE.MeshPhysicalMaterial>, 
+    threeObject: THREE.Mesh<THREE.BufferGeometry, THREE.MeshPhysicalMaterial>, 
     physicsShape, 
     mass: number, 
     pos: THREE.Vector3, 
