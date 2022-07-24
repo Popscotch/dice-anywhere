@@ -109,12 +109,14 @@ function createObjects() {
     ground.castShadow = true;
     ground.receiveShadow = true;
 
+    const texture = new THREE.TextureLoader().load(require('./tex_test.png'));
+
     // Create Cubes
-    for(let i = 0; i < 33; i++){
+    for (let i = 0; i < 33; i++) {
         pos = new THREE.Vector3(0.1 * i, i, 0.1 * i);
         quat = new THREE.Quaternion(10, 5, 0, 1);
         material = Materials.Standard;
-        material.color = Colors.Red;
+        material.map = texture;
         const cube = createParalellepiped(0.5, 0.5, 0.5, 10, pos, quat, material)
         cube.castShadow = true;
         cube.receiveShadow = true;
