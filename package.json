@@ -12,7 +12,7 @@
   "license": "ISC",
   "dependencies": {
     "ammo.js": "github:kripken/ammo.js",
-    "three": "^0.139.0"
+    "three": "^0.144.0"
   },
   "devDependencies": {
     "@tsconfig/recommended": "^1.0.1",
